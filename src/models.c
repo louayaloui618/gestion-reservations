@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "../include/models.h"
 
 Salle creer_salle(const char *nom, int capacite,
@@ -63,4 +64,64 @@ void afficher_reservation(const Reservation *r)
         printf("Terminée\n");
         break;
     }
+}
+
+int charger_salles(const char *chemin, Salle salles[], int max)
+{
+    FILE *fichier = fopen(chemin, "r");
+    if (fichier == NULL)
+        return 0;
+
+    char ligne[256];
+    int x = 0;
+
+    while (x < max && fgets(ligne, sizeof(ligne), fichier) != NULL)
+    {
+        char *nom = strtok(ligne, ";\n");
+        char *cap = strtok(NULL, ";\n");
+        char *tarif = strtok(NULL, ";\n");
+        char *equip = strtok(NULL, ";\n");
+
+        if (nom == NULL || cap == NULL || tarif == NULL || equip == NULL)
+            continue;
+
+        salles[x] = creer_salle(nom, atoi(cap), (float)atof(tarif), equip);
+        x++;
+    }
+
+    fclose(fichier);
+    return x;
+}
+
+int sauvegarder_salles(const char *chemin, const Salle salles[], int nb)
+{
+    FILE *fichier = fopen(chemin, "w");
+    if (fichier == NULL)
+        return 0;
+
+    for (int i = 0; i < nb; i++)
+    {
+        fprintf(fichier, "%s;%d;%.2f;%s\n",
+                salles[i].nom, salles[i].capacite,
+                salles[i].tarif_horaire, salles[i].equipements);
+    }
+
+    fclose(fichier);
+    return 1;
+}
+
+const Salle *trouver_salle(const Salle salles[], int nb, const char *nom)
+{
+    for (int i = 0; i < nb; i++)
+    {
+        if (strcmp(salles[i].nom, nom) == 0)
+            return &salles[i];
+    }
+    return NULL;
+}
+
+float calculer_cout(const Salle *s, int heure_debut, int heure_fin)
+{
+    float duree = (heure_fin - heure_debut) / 60.0f;
+    return s->tarif_horaire * duree;
 }
